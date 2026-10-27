@@ -1,0 +1,453 @@
+{
+  "manage_group": {
+    "description": "管理群",
+    "type": "string",
+    "hint": "bot收到的投稿将在管理群里审批, 不填则将审批信息私发给bot管理员"
+  },
+  "llm": {
+    "description": "LLM模块配置",
+    "type": "object",
+    "hint": "",
+    "items": {
+      "post_provider_id": {
+        "description": "写说说用的LLM提供商",
+        "hint": "留空或者填写的提供商不存在时, 则使用当前正在使用的LLM提供商",
+        "type": "string",
+        "default": "",
+        "_special": "select_provider"
+      },
+      "post_prompt": {
+        "description": "写说说用的llm提示词",
+        "type": "text",
+        "hint": "强烈建议自行根据Bot人格进行改写, 从而达到更好的效果",
+        "default": "## 找出一个你感兴趣的主题来写一句吐槽或感慨，注意精简"
+      },
+      "comment_provider_id": {
+        "description": "评论说说用的LLM提供商",
+        "hint": "留空或者填写的提供商不存在时, 则使用当前正在使用的LLM提供商",
+        "type": "string",
+        "default": "",
+        "_special": "select_provider"
+      },
+      "comment_prompt": {
+        "description": "评论说说用的llm提示词",
+        "type": "text",
+        "hint": "强烈建议自行根据Bot人格进行改写, 从而达到更好的效果",
+        "default": "生成一句简短、直接、贴题、犀利的评论, 不要解释、不做自我描述、不分选项"
+      },
+      "reply_provider_id": {
+        "description": "回复评论用的LLM提供商",
+        "hint": "留空或者填写的提供商不存在时, 则使用当前正在使用的LLM提供商",
+        "type": "string",
+        "default": "",
+        "_special": "select_provider"
+      },
+      "reply_prompt": {
+        "description": "回复评论用的llm提示词",
+        "type": "text",
+        "hint": "强烈建议自行根据Bot人格进行改写, 从而达到更好的效果",
+        "default": "这条帖子收到了一条评论，请回复此条评论, 不要解释、不做自我描述、不分选项"
+      }
+    }
+  },
+  "source": {
+    "description": "数据来源配置",
+    "type": "object",
+    "hint": "",
+    "items": {
+      "ignore_groups": {
+        "description": "忽略的群聊列表",
+        "hint": "若群聊被忽略, Bot将不会从该群聊抽取聊天记录来写说说。建议将信息比较敏感的群聊加入此列表",
+        "type": "list",
+        "default": []
+      },
+      "ignore_users": {
+        "description": "忽略的用户列表",
+        "type": "list",
+        "hint": "Bot在随机触发读说说时, 如果发现用户未开放空间, 则自动将该用户加入忽略列表, 下次不再处理该用户",
+        "default": []
+      },
+      "post_max_msg": {
+        "description": "用于写说说的聊天记录的最大条数",
+        "type": "int",
+        "hint": "过长会爆上下文, 一般几百条足矣",
+        "slider": {
+          "min": 100,
+          "max": 1000,
+          "step": 10
+        },
+        "default": 500
+      }
+    }
+  },
+  "trigger": {
+    "description": "触发配置",
+    "type": "object",
+    "hint": "",
+    "items": {
+      "publish_cron": {
+        "description": "自动发说说的基准触发时间",
+        "type": "string",
+        "hint": "使用 Cron 表达式（分 时 日 月 周）定义基准时间。例如 “30 23 * * *” 表示每天 23:30 为基准点；实际执行时间 = 基准点 ± 偏移秒数（随机）。留空表示禁用此功能",
+        "default": "30 23 * * *"
+      },
+      "publish_offset": {
+        "description": "自动发说说的时间偏移（秒）",
+        "type": "int",
+        "hint": "基于基准触发时间做随机前后浮动。设为 600 表示会在基准触发时间前后 600 秒内随机触发；设为 0 则严格按 cron 时间触发",
+        "slider": {
+          "min": 0,
+          "max": 3600,
+          "step": 1
+        },
+        "default": 600
+      },
+      "comment_cron": {
+        "description": "自动评论的基准触发时间",
+        "type": "string",
+        "hint": "注意此处评论的是 bot 好友们最近发的说说。使用 Cron 表达式定义基准时间；实际执行时间 = 基准点 ± 偏移秒数（随机）。留空表示禁用此功能",
+        "default": "0 8 * * *"
+      },
+      "comment_offset": {
+        "description": "自动评论的时间偏移（秒）",
+        "type": "int",
+        "hint": "基于基准触发时间做随机前后浮动。设为 600 表示会在基准触发时间前后 600 秒内随机触发；设为 0 则严格按 cron 时间触发",
+        "slider": {
+          "min": 0,
+          "max": 3600,
+          "step": 1
+        },
+        "default": 600
+      },
+      "read_prob": {
+        "description": "聊天时触发评说说的概率",
+        "type": "float",
+        "hint": "用户在群聊、私聊时, Bot会随机评论说说。推荐设得非常小",
+        "slider": {
+          "min": 0,
+          "max": 1,
+          "step": 0.0001
+        },
+        "default": 0.001
+      },
+      "send_admin": {
+        "description": "触发评说说时仅通知管理员",
+        "hint": "打开后, 渲染好的稿件将私发给bot管理员, 而不是直接发到群里",
+        "type": "bool",
+        "default": false
+      },
+      "like_when_comment": {
+        "description": "评说说时是否自动点赞",
+        "hint": "在评论完说说后会自动给此说说点赞",
+        "type": "bool",
+        "default": true
+      }
+    }
+  },
+  "cookie_ttl": {
+    "description": "Cookie刷新TTL",
+    "type": "int",
+    "hint": "距离上次刷新超过该时长后，下次请求前会先调用 OneBot 的 get_login_info 刷新 Cookie，单位秒。设为 0 表示不按 TTL 主动刷新",
+    "slider": {
+      "min": 0,
+      "max": 86400,
+      "step": 60
+    },
+    "default": 600
+  },
+  "timeout": {
+    "description": "请求超时时间",
+    "type": "int",
+    "hint": "网络请求的超时时间, 单位秒",
+    "slider": {
+      "min": 5,
+      "max": 60,
+      "step": 1
+    },
+    "default": 10
+  },
+  "show_name": {
+    "description": "是否显示昵称",
+    "type": "bool",
+    "hint": "通过稿件发布说说时, 是否在头部显示“【来自 xxx 的投稿】”，若是匿名投稿者，昵称会显示为“匿名者”",
+    "default": true
+  },
+  "pro": {
+    "description": "增强功能配置（本插件新增）",
+    "type": "object",
+    "items": {
+      "reply_policy": {
+        "description": "楼中楼自动回复策略",
+        "type": "string",
+        "options": [
+          "off",
+          "owner_only",
+          "friends",
+          "everyone"
+        ],
+        "labels": [
+          "关闭",
+          "只回主人",
+          "好友（推荐）",
+          "所有人（激进）"
+        ],
+        "default": "friends",
+        "hint": "friends=回复所有回复你的人，但排除黑名单并遵守冷却；everyone=冷却减半上限翻倍，风控风险高"
+      },
+      "owner_qq": {
+        "description": "主人QQ号",
+        "type": "string",
+        "default": "",
+        "hint": "留空则取 AstrBot 管理员列表第一个"
+      },
+      "notify_owner": {
+        "description": "自动回复后私信通知我",
+        "type": "bool",
+        "default": true,
+        "hint": "关掉可以省一点点消息开销，但你就不知道她回了啥"
+      },
+      "watch_ttl_days": {
+        "description": "每条动态的巡检窗口（天）",
+        "type": "int",
+        "default": 3,
+        "hint": "事件驱动：机器人发动态/评论过/盯的人发新动态，才会对这条开一个窗口；窗口到期自动不再碰它的接口。平时零调用",
+        "slider": {
+          "min": 1,
+          "max": 30,
+          "step": 1
+        }
+      },
+      "watch_qqs": {
+        "description": "要盯着谁的新动态（QQ号，逗号分隔）",
+        "type": "string",
+        "default": "",
+        "hint": "填了就会低频嗅探这些人的新动态并自动开启巡检；主人默认已包含，不用重复填。留空则只盯机器人自己和相关互动",
+        "obvious_hint": true
+      },
+      "poll_interval_min": {
+        "description": "巡检间隔（分钟）",
+        "type": "int",
+        "default": 10,
+        "hint": "间隔越大越省，巡检本身不调 LLM，只花网络请求",
+        "slider": {
+          "min": 3,
+          "max": 120,
+          "step": 1
+        }
+      },
+      "reply_cooldown_min": {
+        "description": "两次自动回复之间的冷却（分钟）",
+        "type": "int",
+        "default": 30,
+        "hint": "冷却期内一条都不回，这是最直接的省钱开关",
+        "slider": {
+          "min": 0,
+          "max": 240,
+          "step": 5
+        }
+      },
+      "max_replies_per_round": {
+        "description": "单轮最多回复几个人",
+        "type": "int",
+        "default": 3,
+        "hint": "一次巡检里最多回几条，回满就停手等下一轮",
+        "slider": {
+          "min": 1,
+          "max": 20,
+          "step": 1
+        }
+      },
+      "daily_reply_limit": {
+        "description": "每天最多自动回复多少条",
+        "type": "int",
+        "default": 20,
+        "hint": "硬性天花板，每天 0 点自动重置。达到上限当天彻底停手，这是防烧钱的总闸",
+        "slider": {
+          "min": 1,
+          "max": 200,
+          "step": 1
+        }
+      },
+      "per_user_daily_limit": {
+        "description": "同一个人每天最多回几条",
+        "type": "int",
+        "default": 3,
+        "hint": "防止某个人跟她聊起来没完，把额度一个人耗光",
+        "slider": {
+          "min": 1,
+          "max": 50,
+          "step": 1
+        }
+      },
+      "max_replies_per_thread": {
+        "description": "同一个主楼里最多回几条（楼中楼上限）",
+        "type": "int",
+        "default": 2,
+        "hint": "借鉴B站楼中楼：一个主楼层下机器人最多接几句话，防止在一个楼里刷屏",
+        "slider": {
+          "min": 1,
+          "max": 10,
+          "step": 1
+        }
+      },
+      "reply_own_post_comments": {
+        "description": "回复别人在自己说说下的直接评论",
+        "type": "bool",
+        "default": true,
+        "hint": "关掉后，她只处理「别人回复了她的评论」这种场景；打开则会主动接话，耗时耗钱都会变多"
+      },
+      "scan_post_count": {
+        "description": "每次巡检扫描几条说说",
+        "type": "int",
+        "default": 3,
+        "hint": "扫得越多越容易发现新回复，但网络请求也越多",
+        "slider": {
+          "min": 1,
+          "max": 20,
+          "step": 1
+        }
+      },
+      "reply_gap_sec": {
+        "description": "连续回复之间的间隔（秒）",
+        "type": "int",
+        "default": 8,
+        "hint": "别设太小，回得太快容易被 QQ 风控",
+        "slider": {
+          "min": 1,
+          "max": 60,
+          "step": 1
+        }
+      },
+      "smart_style": {
+        "description": "智能评论风格附加提示",
+        "type": "text",
+        "default": "像真人朋友一样随口接话，不要客套，不要总结，不要写成朋友圈文案。",
+        "hint": "会拼接到内置提示词后面"
+      },
+      "max_comment_len": {
+        "description": "每条回复最多几个字",
+        "type": "int",
+        "default": 40,
+        "hint": "字数直接等于输出 token，这是最细粒度的省钱旋钮",
+        "slider": {
+          "min": 10,
+          "max": 200,
+          "step": 5
+        }
+      },
+      "per_comment_round_limit": {
+        "description": "对同一个人的同一条评论，最多来回接几轮",
+        "type": "int",
+        "default": 1,
+        "hint": "1=对方评论我只回一句，再回就不再接了。防止两个人无限套娃把额度耗光",
+        "slider": {
+          "min": 1,
+          "max": 10,
+          "step": 1
+        }
+      }
+    }
+  },
+  "publish": {
+    "description": "发动态配置（本插件新增）",
+    "type": "object",
+    "hint": "控制机器人主动发QQ空间说说的行为",
+    "items": {
+      "auto_enabled": {
+        "description": "是否开启定时自动发动态",
+        "type": "bool",
+        "default": false,
+        "hint": "关掉则只能用「发说说」命令手动发，不会自己往你空间发东西"
+      },
+      "times_per_day": {
+        "description": "每天自动发几条",
+        "type": "int",
+        "default": 1,
+        "hint": "仅在 auto_enabled 打开时生效，且不能超过 max_per_day",
+        "slider": {
+          "min": 1,
+          "max": 5,
+          "step": 1
+        }
+      },
+      "at_hours": {
+        "description": "自动发送的时间点（24小时制，逗号分隔）",
+        "type": "string",
+        "default": "21",
+        "hint": "例如填 9,15,21 表示早上9点、下午3点、晚上9点各发一条。数量最好和「每天几条」一致"
+      },
+      "jitter_min": {
+        "description": "时间点随机浮动（分钟）",
+        "type": "int",
+        "default": 20,
+        "hint": "在设定时间点前后随机浮动，避免看起来像机器人定点打卡",
+        "slider": {
+          "min": 0,
+          "max": 120,
+          "step": 5
+        }
+      },
+      "max_per_day": {
+        "description": "每天最多发几条（总闸）",
+        "type": "int",
+        "default": 2,
+        "hint": "含手动发送，达到上限当天彻底停手，0 点重置",
+        "slider": {
+          "min": 1,
+          "max": 20,
+          "step": 1
+        }
+      },
+      "gap_min": {
+        "description": "两条动态之间的最小间隔（分钟）",
+        "type": "int",
+        "default": 180,
+        "hint": "防止短时间内连发被风控",
+        "slider": {
+          "min": 0,
+          "max": 720,
+          "step": 10
+        }
+      },
+      "need_confirm": {
+        "description": "自动生成的动态先发给主人审核",
+        "type": "bool",
+        "default": false,
+        "hint": "打开后，她写好先私发给你，你回复「发」才真正发布；关掉则直接发"
+      },
+      "topic_source": {
+        "description": "素材来源",
+        "type": "string",
+        "options": [
+          "chat",
+          "topic",
+          "news"
+        ],
+        "labels": [
+          "聊天记录（推荐）",
+          "自主选题",
+          "科技AI新闻"
+        ],
+        "default": "chat",
+        "hint": "chat=从群里聊天记录提炼；topic=她自己随便想一个主题；news=刷当天科技/AI新闻来写"
+      },
+      "style_prompt": {
+        "description": "写动态的风格提示词",
+        "type": "text",
+        "default": "像真人随手发的一条说说，别写成朋友圈文案，别加话题标签，别自我解释。",
+        "hint": "会拼接到内置提示词后面"
+      },
+      "max_len": {
+        "description": "每条动态最多几个字",
+        "type": "int",
+        "default": 80,
+        "hint": "超出会被截断",
+        "slider": {
+          "min": 10,
+          "max": 500,
+          "step": 10
+        }
+      }
+    }
+  }
+}

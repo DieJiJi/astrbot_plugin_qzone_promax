@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 运行时状态（每日额度、已回复记录）——属于用户数据，不入库
+pro_state.json
+
+.vscode/
+.idea/
+.DS_Store
